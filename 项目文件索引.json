@@ -6,8 +6,8 @@
   "gateway": "/opt/apps/hiremate/Caddyfile",
   "caddy_container": "hiremate-caddy",
   "docker_network": "shared_gateway",
-  "postgres_user": "autsky6666@gmail.com",
-  "database_url_user": "autsky6666%40gmail.com",
+  "postgres_user": "autsky",
+  "database_url_user": "autsky",
   "updated_on": "2026-04-25",
   "stack": [
     "FastAPI",

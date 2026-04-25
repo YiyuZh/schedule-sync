@@ -71,8 +71,10 @@ class Settings(BaseSettings):
             errors.append("DATABASE_URL 仍包含 replace-with 占位值")
         if self.database_url.startswith("postgresql") and "schedule_sync:" in self.database_url:
             errors.append("DATABASE_URL 仍在使用旧数据库用户 schedule_sync")
-        if "autsky6666@gmail.com" in self.database_url:
-            errors.append("DATABASE_URL 中的 autsky6666@gmail.com 必须写成 autsky6666%40gmail.com")
+        if "autsky6666@gmail.com" in self.database_url or "autsky6666%40gmail.com" in self.database_url:
+            errors.append("DATABASE_URL 仍在使用旧邮箱数据库用户，请改为 autsky")
+        if self.database_url.startswith("postgresql") and "://autsky:" not in self.database_url:
+            errors.append("DATABASE_URL 必须使用数据库用户 autsky")
         if "sync.example.com" in self.app_base_url:
             errors.append("APP_BASE_URL 仍是 sync.example.com 示例域名")
         if self.schedule_sync_domain == "sync.example.com":

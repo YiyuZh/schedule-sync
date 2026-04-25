@@ -3,7 +3,7 @@ set -euo pipefail
 
 APP_DIR="${APP_DIR:-/opt/apps/schedule-sync}"
 CONTAINER="${POSTGRES_CONTAINER:-schedule-sync-postgres}"
-TARGET_USER="${POSTGRES_USER:-autsky6666@gmail.com}"
+TARGET_USER="${POSTGRES_USER:-autsky}"
 POSTGRES_DB="${POSTGRES_DB:-schedule_sync}"
 
 if [ -d "${APP_DIR}" ]; then
@@ -17,7 +17,7 @@ if [ -f ".env" ]; then
   set +a
 fi
 
-TARGET_USER="${POSTGRES_USER:-autsky6666@gmail.com}"
+TARGET_USER="${POSTGRES_USER:-autsky}"
 POSTGRES_DB="${POSTGRES_DB:-schedule_sync}"
 
 if [ -z "${POSTGRES_PASSWORD:-}" ] || [[ "${POSTGRES_PASSWORD}" == *"replace-with"* ]]; then
@@ -29,7 +29,7 @@ echo "[schedule-sync] target postgres user: ${TARGET_USER}"
 echo "[schedule-sync] target postgres database: ${POSTGRES_DB}"
 
 ADMIN_USER=""
-for candidate in "${TARGET_USER}" "schedule_sync" "postgres"; do
+for candidate in "${TARGET_USER}" "autsky6666@gmail.com" "schedule_sync" "postgres"; do
   if docker exec "${CONTAINER}" psql -U "${candidate}" -d postgres -tAc "select 1" >/dev/null 2>&1; then
     ADMIN_USER="${candidate}"
     break
@@ -37,7 +37,7 @@ for candidate in "${TARGET_USER}" "schedule_sync" "postgres"; do
 done
 
 if [ -z "${ADMIN_USER}" ]; then
-  echo "[schedule-sync] ERROR: cannot connect to postgres as ${TARGET_USER}, schedule_sync, or postgres"
+  echo "[schedule-sync] ERROR: cannot connect to postgres as ${TARGET_USER}, autsky6666@gmail.com, schedule_sync, or postgres"
   echo "[schedule-sync] Check docker compose logs postgres --tail=200"
   exit 1
 fi
