@@ -1,0 +1,57 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: schedule-sync-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-schedule_sync}
+      POSTGRES_USER: ${POSTGRES_USER:-schedule_sync}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - schedule_sync_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-schedule_sync} -d ${POSTGRES_DB:-schedule_sync}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.tuna.tsinghua.edu.cn/simple}
+        PIP_TRUSTED_HOST: ${PIP_TRUSTED_HOST:-pypi.tuna.tsinghua.edu.cn}
+    container_name: schedule-sync-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    expose:
+      - "8000"
+    ports:
+      - "127.0.0.1:${SCHEDULE_SYNC_PREVIEW_PORT:-18130}:8000"
+    environment:
+      UVICORN_WORKERS: ${UVICORN_WORKERS:-1}
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/api/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - default
+      - shared_gateway
+
+volumes:
+  schedule_sync_postgres_data:
+    name: schedule_sync_postgres_data
+
+networks:
+  shared_gateway:
+    external: true
+    name: ${SHARED_CADDY_NETWORK:-shared_gateway}

@@ -1,0 +1,17 @@
+# Add this site block to /opt/apps/hiremate/Caddyfile.
+# Existing public gateway source of truth: /opt/apps/hiremate/Caddyfile.
+# Existing public Caddy container: hiremate-caddy.
+# Existing shared Docker network: shared_gateway.
+
+schedule-sync.zenithy.art {
+    import common_site
+
+    reverse_proxy schedule-sync-api:8000
+}
+
+# Optional env-placeholder variant if /opt/apps/hiremate/.env exports SCHEDULE_SYNC_DOMAIN:
+#
+# {$SCHEDULE_SYNC_DOMAIN} {
+#     import common_site
+#     reverse_proxy schedule-sync-api:8000
+# }

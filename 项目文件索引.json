@@ -1,0 +1,61 @@
+{
+  "project": "日程安排云同步服务端",
+  "path": "D:/apps/schedule_sync_server",
+  "deploy_path": "/opt/apps/schedule-sync",
+  "domain": "https://schedule-sync.zenithy.art",
+  "gateway": "/opt/apps/hiremate/Caddyfile",
+  "caddy_container": "hiremate-caddy",
+  "docker_network": "shared_gateway",
+  "updated_on": "2026-04-25",
+  "stack": [
+    "FastAPI",
+    "SQLAlchemy 2.x",
+    "Pydantic v2",
+    "PostgreSQL",
+    "Docker Compose",
+    "Alembic"
+  ],
+  "read_before_modify": [
+    "任务记忆文档.md",
+    "项目文件索引.md",
+    "项目文件索引.json",
+    "README.md",
+    "../schedule/三端联通上线操作手册.md"
+  ],
+  "entry_files": [
+    "run.py",
+    "app/main.py"
+  ],
+  "api_files": [
+    "app/api/health.py",
+    "app/api/auth.py",
+    "app/api/devices.py",
+    "app/api/sync.py"
+  ],
+  "core_files": [
+    "app/core/config.py",
+    "app/core/database.py",
+    "app/core/security.py",
+    "app/core/response.py"
+  ],
+  "service_files": [
+    "app/services/auth_service.py",
+    "app/services/device_service.py",
+    "app/services/sync_service.py"
+  ],
+  "deploy_files": [
+    "Dockerfile",
+    "docker-compose.yml",
+    ".env.example",
+    "deploy/bootstrap-server.sh",
+    "deploy/update-server.sh",
+    "deploy/backup-postgres.sh",
+    "deploy/smoke-test.sh",
+    "deploy/caddy.schedule-sync.example"
+  ],
+  "verification": {
+    "pytest": "python -m pytest -q",
+    "import": "python -c \"from app.main import app; print(app.title)\"",
+    "smoke": "bash deploy/smoke-test.sh http://127.0.0.1:18130"
+  }
+}
