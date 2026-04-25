@@ -68,8 +68,9 @@ bash deploy/bootstrap-server.sh
 
 - `APP_BASE_URL=https://schedule-sync.zenithy.art`
 - `SCHEDULE_SYNC_DOMAIN=schedule-sync.zenithy.art`
+- `POSTGRES_USER=autsky6666@gmail.com`
 - `POSTGRES_PASSWORD=<强密码>`
-- `DATABASE_URL=postgresql+psycopg://schedule_sync:<强密码>@postgres:5432/schedule_sync`
+- `DATABASE_URL=postgresql+psycopg://autsky6666%40gmail.com:<URL编码后的强密码>@postgres:5432/schedule_sync`
 - `JWT_SECRET=<至少 32 位随机字符串>`
 - `ALLOWED_ORIGINS=http://127.0.0.1:1420,http://localhost:1420,http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:5174,http://localhost:5174,http://localhost,tauri://localhost,capacitor://localhost,ionic://localhost,https://schedule-sync.zenithy.art`
 - `PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple`
@@ -78,6 +79,37 @@ bash deploy/bootstrap-server.sh
 - `APT_SECURITY_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/debian-security`
 
 生产环境会拒绝默认 JWT、SQLite、`replace-with-*`、`sync.example.com` 等占位配置。
+
+### PostgreSQL 用户名统一规则
+
+本项目生产环境统一使用：
+
+```env
+POSTGRES_USER=autsky6666@gmail.com
+```
+
+但 `DATABASE_URL` 是 URL，用户名里的 `@` 必须写成 `%40`：
+
+```env
+DATABASE_URL=postgresql+psycopg://autsky6666%40gmail.com:<URL编码后的强密码>@postgres:5432/schedule_sync
+```
+
+如果密码里包含 `@`、`#`、`:`、`/`、`?`、`&` 等特殊字符，密码也必须 URL 编码。
+
+如果服务器已经启动过 PostgreSQL，单纯修改 `.env` 不会自动创建新角色。执行：
+
+```bash
+cd /opt/apps/schedule-sync
+bash deploy/fix-postgres-user.sh
+docker compose up -d api
+curl http://127.0.0.1:18130/api/health
+```
+
+如果这里返回 `db=ok`，再测试公网：
+
+```bash
+curl -vk https://schedule-sync.zenithy.art/api/health
+```
 
 ### 构建加速说明
 

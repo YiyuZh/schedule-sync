@@ -44,6 +44,29 @@ require_not_placeholder POSTGRES_PASSWORD
 require_not_placeholder DATABASE_URL
 require_not_placeholder JWT_SECRET
 
+EXPECTED_POSTGRES_USER="autsky6666@gmail.com"
+EXPECTED_DATABASE_USER="autsky6666%40gmail.com"
+
+if [ "${POSTGRES_USER:-}" != "${EXPECTED_POSTGRES_USER}" ]; then
+  echo "[schedule-sync] POSTGRES_USER must be ${EXPECTED_POSTGRES_USER}; current value: ${POSTGRES_USER:-<empty>}" >&2
+  exit 1
+fi
+
+if [[ "${DATABASE_URL}" == *"schedule_sync:"* ]]; then
+  echo "[schedule-sync] DATABASE_URL still uses old user schedule_sync; use ${EXPECTED_DATABASE_USER} instead" >&2
+  exit 1
+fi
+
+if [[ "${DATABASE_URL}" == *"${EXPECTED_POSTGRES_USER}"* ]]; then
+  echo "[schedule-sync] DATABASE_URL is a URL, so @ in ${EXPECTED_POSTGRES_USER} must be encoded as %40" >&2
+  exit 1
+fi
+
+if [[ "${DATABASE_URL}" != *"${EXPECTED_DATABASE_USER}"* ]]; then
+  echo "[schedule-sync] DATABASE_URL must include encoded user ${EXPECTED_DATABASE_USER}" >&2
+  exit 1
+fi
+
 echo "[schedule-sync] ensuring shared Docker network: ${SHARED_NETWORK}"
 docker network inspect "${SHARED_NETWORK}" >/dev/null 2>&1 || docker network create "${SHARED_NETWORK}"
 

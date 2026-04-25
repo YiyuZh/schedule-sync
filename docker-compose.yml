@@ -5,12 +5,12 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-schedule_sync}
-      POSTGRES_USER: ${POSTGRES_USER:-schedule_sync}
+      POSTGRES_USER: ${POSTGRES_USER:-autsky6666@gmail.com}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     volumes:
       - schedule_sync_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-schedule_sync} -d ${POSTGRES_DB:-schedule_sync}"]
+      test: ["CMD-SHELL", "pg_isready -U \"${POSTGRES_USER:-autsky6666@gmail.com}\" -d ${POSTGRES_DB:-schedule_sync}"]
       interval: 10s
       timeout: 5s
       retries: 12

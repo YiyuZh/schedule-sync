@@ -2,7 +2,7 @@
 set -euo pipefail
 
 BACKUP_ROOT="${BACKUP_ROOT:-/opt/apps/backups/schedule-sync/postgres}"
-POSTGRES_USER="${POSTGRES_USER:-schedule_sync}"
+POSTGRES_USER="${POSTGRES_USER:-autsky6666@gmail.com}"
 POSTGRES_DB="${POSTGRES_DB:-schedule_sync}"
 
 if [ -f ".env" ]; then

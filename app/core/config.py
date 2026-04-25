@@ -69,6 +69,10 @@ class Settings(BaseSettings):
             errors.append("生产环境 DATABASE_URL 不能使用 SQLite")
         if "replace-with" in self.database_url:
             errors.append("DATABASE_URL 仍包含 replace-with 占位值")
+        if self.database_url.startswith("postgresql") and "schedule_sync:" in self.database_url:
+            errors.append("DATABASE_URL 仍在使用旧数据库用户 schedule_sync")
+        if "autsky6666@gmail.com" in self.database_url:
+            errors.append("DATABASE_URL 中的 autsky6666@gmail.com 必须写成 autsky6666%40gmail.com")
         if "sync.example.com" in self.app_base_url:
             errors.append("APP_BASE_URL 仍是 sync.example.com 示例域名")
         if self.schedule_sync_domain == "sync.example.com":

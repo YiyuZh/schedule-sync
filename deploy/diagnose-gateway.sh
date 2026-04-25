@@ -67,4 +67,19 @@ If HTTPS fails with tlsv1 alert internal error:
 4. Watch Caddy logs for ACME/certificate errors.
 5. Re-test:
    curl -vkI https://schedule-sync.zenithy.art/api/health
+
+If HTTPS works but returns 502 Bad Gateway:
+1. Caddy has loaded the site and the certificate is OK.
+2. The backend container is not reachable from Caddy.
+3. Check:
+   cd /opt/apps/schedule-sync
+   docker compose ps
+   docker compose logs api --tail=200
+   curl http://127.0.0.1:18130/api/health
+   docker network inspect shared_gateway | grep -E "hiremate-caddy|schedule-sync-api"
+4. Fix most common network issue:
+   docker network connect shared_gateway schedule-sync-api || true
+   docker exec hiremate-caddy caddy reload --config /etc/caddy/Caddyfile
+5. Re-test:
+   curl -vk https://schedule-sync.zenithy.art/api/health
 EOF

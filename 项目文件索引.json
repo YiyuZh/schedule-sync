@@ -6,6 +6,8 @@
   "gateway": "/opt/apps/hiremate/Caddyfile",
   "caddy_container": "hiremate-caddy",
   "docker_network": "shared_gateway",
+  "postgres_user": "autsky6666@gmail.com",
+  "database_url_user": "autsky6666%40gmail.com",
   "updated_on": "2026-04-25",
   "stack": [
     "FastAPI",
@@ -50,6 +52,7 @@
     "deploy/bootstrap-server.sh",
     "deploy/update-server.sh",
     "deploy/backup-postgres.sh",
+    "deploy/fix-postgres-user.sh",
     "deploy/smoke-test.sh",
     "deploy/caddy.schedule-sync.example"
   ],
