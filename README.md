@@ -270,6 +270,7 @@ https://schedule-sync.zenithy.art/admin
 - 查看总用户数、近 30 日活跃、设备数、同步记录数和今日活跃。
 - 查看用户列表，支持按邮箱或昵称搜索。
 - 查看单个用户的设备列表和同步实体类型分布。
+- 管理员可为忘记密码的用户重置登录密码。
 - 删除普通用户，并清理该用户的设备、Token、用户设置、同步记录和同步变更。
 - 禁止删除 `ADMIN_EMAIL` 对应的管理员账号。
 
@@ -281,7 +282,7 @@ ADMIN_PASSWORD_HASH=<管理员密码哈希>
 ADMIN_TOKEN_EXPIRE_MINUTES=30
 ```
 
-不要把明文管理员密码提交到 Git。首次部署时在服务器执行下面命令生成哈希，然后把输出写入 `.env` 的 `ADMIN_PASSWORD_HASH`：
+不要把明文管理员密码提交到 Git。首次部署时可在本地或服务器执行下面命令生成哈希，然后把输出写入 `.env` 的 `ADMIN_PASSWORD_HASH`：
 
 ```bash
 cd /opt/apps/schedule-sync
@@ -289,6 +290,12 @@ python - <<'PY'
 from app.core.security import hash_password
 print(hash_password("Aut123456"))
 PY
+```
+
+由于哈希中包含 `$`，写入 `.env` 时建议使用英文单引号包裹：
+
+```env
+ADMIN_PASSWORD_HASH='pbkdf2_sha256$260000$...$...'
 ```
 
 本地开发临时调试可以使用：
@@ -306,6 +313,7 @@ ADMIN_PASSWORD=Aut123456
 - `GET /api/admin/overview`
 - `GET /api/admin/users`
 - `GET /api/admin/users/{user_id}`
+- `POST /api/admin/users/{user_id}/password`
 - `DELETE /api/admin/users/{user_id}`
 
 部署更新：

@@ -15,6 +15,8 @@ from app.schemas.admin import (
     AdminLoginRequest,
     AdminMeRead,
     AdminOverviewRead,
+    AdminResetPasswordRead,
+    AdminResetPasswordRequest,
     AdminTokenRead,
     AdminUserDetailRead,
     AdminUserListRead,
@@ -80,3 +82,14 @@ def user_detail(user_id: int, _: AdminEmail, db: DbSession) -> dict[str, object]
 def delete_user(user_id: int, payload: AdminDeleteRequest, _: AdminEmail, db: DbSession) -> dict[str, object]:
     AdminService(db).delete_user(user_id, payload)
     return success({"ok": True})
+
+
+@router.post("/users/{user_id}/password", response_model=ApiResponse[AdminResetPasswordRead])
+def reset_user_password(
+    user_id: int,
+    payload: AdminResetPasswordRequest,
+    _: AdminEmail,
+    db: DbSession,
+) -> dict[str, object]:
+    data = AdminService(db).reset_user_password(user_id, payload)
+    return success(data.model_dump())

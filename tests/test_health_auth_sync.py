@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 from app.core.config import Settings, SettingsError, get_settings
 from app.core.database import SessionLocal, initialize_database
-from app.core.security import hash_password
+from app.core.security import hash_password, verify_password
 from app.main import app
 from app.models.device import Device
 from app.models.sync_change import SyncChange
@@ -310,6 +310,62 @@ def test_admin_user_cannot_be_deleted(monkeypatch):
     )
     assert response.status_code == 403
     assert response.json()["code"] == 4406
+
+
+def test_admin_can_reset_user_password_and_revoke_sessions(monkeypatch):
+    suffix = uuid4().hex[:8]
+    email = f"admin-reset-password-{suffix}@example.com"
+    old_password = "OldPass123456"
+    new_password = "NewPass123456"
+    register(email, old_password)
+    token_pair = login(email, f"reset-password-device-{suffix}", old_password)
+
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.email == email).one()
+        user_id = int(user.id)
+        assert verify_password(old_password, str(user.password_hash))
+
+    headers = admin_headers(monkeypatch)
+    reset = unwrap(
+        client.post(
+            f"/api/admin/users/{user_id}/password",
+            headers=headers,
+            json={
+                "confirm_email": email,
+                "new_password": new_password,
+                "confirm_password": new_password,
+                "revoke_existing_sessions": True,
+            },
+        )
+    )
+    assert reset["ok"] is True
+    assert reset["revoked_refresh_tokens"] >= 1
+
+    with SessionLocal() as db:
+        user = db.get(User, user_id)
+        assert user is not None
+        assert verify_password(new_password, str(user.password_hash))
+
+    old_login = client.post(
+        "/api/auth/login",
+        json={
+            "email": email,
+            "password": old_password,
+            "device_id": f"reset-password-old-{suffix}",
+            "device_name": "old password",
+            "device_type": "desktop",
+        },
+    )
+    assert old_login.status_code == 401
+
+    revoked_refresh = client.post(
+        "/api/auth/refresh",
+        json={"refresh_token": token_pair["refresh_token"], "device_id": f"reset-password-device-{suffix}"},
+    )
+    assert revoked_refresh.status_code == 401
+
+    new_login = login(email, f"reset-password-new-{suffix}", new_password)
+    assert new_login["access_token"]
 
 
 def test_push_conflict_keeps_rejected_item_metadata():

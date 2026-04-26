@@ -147,6 +147,33 @@
       </form>
     </div>
 
+    <div id="resetPasswordModal" class="modal hidden">
+      <form id="resetPasswordForm" class="modal-card">
+        <h2>修改用户密码</h2>
+        <p>为用户 <strong id="resetPasswordEmailText"></strong> 设置新密码。新密码不会明文保存，会写入服务端密码哈希。</p>
+        <label>
+          确认用户邮箱
+          <input id="resetPasswordEmailInput" type="email" placeholder="输入完整邮箱" required />
+        </label>
+        <label>
+          新密码
+          <input id="newPasswordInput" type="password" minlength="8" maxlength="128" autocomplete="new-password" required />
+        </label>
+        <label>
+          再次输入新密码
+          <input id="confirmPasswordInput" type="password" minlength="8" maxlength="128" autocomplete="new-password" required />
+        </label>
+        <label class="checkbox-row">
+          <input id="revokeSessionsInput" type="checkbox" checked />
+          修改后让该用户现有登录会话失效
+        </label>
+        <div class="modal-actions">
+          <button id="cancelResetPassword" class="ghost-button" type="button">取消</button>
+          <button class="primary-button" type="submit">确认修改</button>
+        </div>
+      </form>
+    </div>
+
     <div id="toast" class="toast hidden"></div>
     <script src="/admin/admin.js"></script>
   </body>

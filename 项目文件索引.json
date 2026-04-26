@@ -55,6 +55,15 @@
     "changed_fields",
     "daily_task status last-write-wins by updated_at"
   ],
+  "admin_capabilities": [
+    "管理员登录",
+    "概览指标",
+    "每日活跃图",
+    "用户搜索分页",
+    "用户详情",
+    "重置用户密码",
+    "删除用户"
+  ],
   "schema_files": [
     "app/schemas/auth.py",
     "app/schemas/device.py",

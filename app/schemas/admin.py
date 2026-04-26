@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from app.schemas.auth import normalize_email
 from app.schemas.common import BaseSchema
@@ -86,3 +86,26 @@ class AdminDeleteRequest(BaseSchema):
     @classmethod
     def validate_confirm_email(cls, value: str) -> str:
         return normalize_email(value)
+
+
+class AdminResetPasswordRequest(BaseSchema):
+    confirm_email: str = Field(min_length=3, max_length=255)
+    new_password: str = Field(min_length=8, max_length=128)
+    confirm_password: str = Field(min_length=8, max_length=128)
+    revoke_existing_sessions: bool = True
+
+    @field_validator("confirm_email")
+    @classmethod
+    def validate_confirm_email(cls, value: str) -> str:
+        return normalize_email(value)
+
+    @model_validator(mode="after")
+    def validate_password_match(self) -> "AdminResetPasswordRequest":
+        if self.new_password != self.confirm_password:
+            raise ValueError("两次输入的新密码不一致")
+        return self
+
+
+class AdminResetPasswordRead(BaseSchema):
+    ok: bool
+    revoked_refresh_tokens: int

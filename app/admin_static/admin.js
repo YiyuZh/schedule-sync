@@ -5,6 +5,7 @@ const state = {
   total: 0,
   search: "",
   deleteTarget: null,
+  resetTarget: null,
 };
 
 const els = {
@@ -31,6 +32,14 @@ const els = {
   deleteEmailText: document.querySelector("#deleteEmailText"),
   deleteEmailInput: document.querySelector("#deleteEmailInput"),
   cancelDelete: document.querySelector("#cancelDelete"),
+  resetPasswordModal: document.querySelector("#resetPasswordModal"),
+  resetPasswordForm: document.querySelector("#resetPasswordForm"),
+  resetPasswordEmailText: document.querySelector("#resetPasswordEmailText"),
+  resetPasswordEmailInput: document.querySelector("#resetPasswordEmailInput"),
+  newPasswordInput: document.querySelector("#newPasswordInput"),
+  confirmPasswordInput: document.querySelector("#confirmPasswordInput"),
+  revokeSessionsInput: document.querySelector("#revokeSessionsInput"),
+  cancelResetPassword: document.querySelector("#cancelResetPassword"),
   toast: document.querySelector("#toast"),
 };
 
@@ -163,6 +172,9 @@ function renderUsers(users) {
         <td>${escapeHtml(user.created_at || "-")}</td>
         <td>
           <button class="ghost-button" data-detail="${user.id}" type="button">详情</button>
+          <button class="secondary-button" data-reset-id="${user.id}" data-reset-email="${escapeHtml(
+            user.email
+          )}" type="button">改密码</button>
           <button class="danger-button" data-delete-id="${user.id}" data-delete-email="${escapeHtml(
             user.email
           )}" type="button">删除</button>
@@ -268,6 +280,16 @@ function openDeleteModal(userId, email) {
   els.deleteModal.classList.remove("hidden");
 }
 
+function openResetPasswordModal(userId, email) {
+  state.resetTarget = { id: userId, email };
+  els.resetPasswordEmailText.textContent = email;
+  els.resetPasswordEmailInput.value = email;
+  els.newPasswordInput.value = "";
+  els.confirmPasswordInput.value = "";
+  els.revokeSessionsInput.checked = true;
+  els.resetPasswordModal.classList.remove("hidden");
+}
+
 async function submitDelete(event) {
   event.preventDefault();
   if (!state.deleteTarget) return;
@@ -287,6 +309,32 @@ async function submitDelete(event) {
 function closeDeleteModal() {
   state.deleteTarget = null;
   els.deleteModal.classList.add("hidden");
+}
+
+async function submitResetPassword(event) {
+  event.preventDefault();
+  if (!state.resetTarget) return;
+  try {
+    const data = await api(`/api/admin/users/${state.resetTarget.id}/password`, {
+      method: "POST",
+      body: JSON.stringify({
+        confirm_email: els.resetPasswordEmailInput.value,
+        new_password: els.newPasswordInput.value,
+        confirm_password: els.confirmPasswordInput.value,
+        revoke_existing_sessions: els.revokeSessionsInput.checked,
+      }),
+    });
+    closeResetPasswordModal();
+    showToast(`密码已修改，已失效 ${data.revoked_refresh_tokens || 0} 个登录会话`);
+    await refreshAll();
+  } catch (error) {
+    showToast(error.message, true);
+  }
+}
+
+function closeResetPasswordModal() {
+  state.resetTarget = null;
+  els.resetPasswordModal.classList.add("hidden");
 }
 
 els.loginForm.addEventListener("submit", login);
@@ -311,8 +359,12 @@ els.usersTable.addEventListener("click", (event) => {
   if (!(target instanceof HTMLElement)) return;
   const detailId = target.dataset.detail;
   const deleteId = target.dataset.deleteId;
+  const resetId = target.dataset.resetId;
   if (detailId) {
     openDetail(detailId);
+  }
+  if (resetId) {
+    openResetPasswordModal(resetId, target.dataset.resetEmail || "");
   }
   if (deleteId) {
     openDeleteModal(deleteId, target.dataset.deleteEmail || "");
@@ -321,6 +373,8 @@ els.usersTable.addEventListener("click", (event) => {
 els.closeDetail.addEventListener("click", () => els.detailDrawer.classList.add("hidden"));
 els.cancelDelete.addEventListener("click", closeDeleteModal);
 els.deleteForm.addEventListener("submit", submitDelete);
+els.cancelResetPassword.addEventListener("click", closeResetPasswordModal);
+els.resetPasswordForm.addEventListener("submit", submitResetPassword);
 
 if (state.token) {
   setLoggedIn(true);

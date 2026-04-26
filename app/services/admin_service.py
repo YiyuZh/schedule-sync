@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.response import AppException
-from app.core.security import create_admin_access_token, verify_password
+from app.core.security import create_admin_access_token, hash_password, verify_password
 from app.models.device import Device
 from app.models.refresh_token import RefreshToken
 from app.models.sync_change import SyncChange
@@ -21,6 +21,8 @@ from app.schemas.admin import (
     AdminDeviceRead,
     AdminEntityCountRead,
     AdminOverviewRead,
+    AdminResetPasswordRead,
+    AdminResetPasswordRequest,
     AdminTokenRead,
     AdminUserDetailRead,
     AdminUserListItem,
@@ -180,6 +182,26 @@ class AdminService:
             self.db.execute(delete(model).where(model.user_id == user_id))
         self.db.delete(user)
         self.db.commit()
+
+    def reset_user_password(self, user_id: int, payload: AdminResetPasswordRequest) -> AdminResetPasswordRead:
+        user = self.db.get(User, user_id)
+        if user is None:
+            raise AppException("用户不存在", code=4404, status_code=404)
+
+        if payload.confirm_email != user.email:
+            raise AppException("确认邮箱不匹配，已取消修改密码", code=4407, status_code=400)
+
+        user.password_hash = hash_password(payload.new_password)
+        revoked_count = 0
+        if payload.revoke_existing_sessions:
+            for token in self.db.scalars(
+                select(RefreshToken).where(RefreshToken.user_id == user_id, RefreshToken.revoked_at.is_(None))
+            ).all():
+                token.revoked_at = utc_now()
+                revoked_count += 1
+
+        self.db.commit()
+        return AdminResetPasswordRead(ok=True, revoked_refresh_tokens=revoked_count)
 
     def _build_user_item(self, user: User) -> AdminUserListItem:
         device_count = int(self.db.scalar(select(func.count(Device.id)).where(Device.user_id == user.id)) or 0)
