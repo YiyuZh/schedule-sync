@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import func, select
@@ -17,6 +18,7 @@ from app.schemas.sync import (
     SyncOperation,
     SyncPullRequest,
     SyncPullResult,
+    SyncAcceptedItem,
     SyncPushChange,
     SyncPushRequest,
     SyncPushResult,
@@ -36,15 +38,24 @@ class SyncService:
         rejected = 0
         conflict_count = 0
         accepted_queue_ids: list[int] = []
+        accepted_items: list[SyncAcceptedItem] = []
         rejected_items: list[SyncRejectedItem] = []
 
         for change in payload.changes:
             try:
                 with self.db.begin_nested():
-                    self._apply_change(user, payload.device_id, change)
+                    accepted_entity_id, accepted_version = self._apply_change(user, payload.device_id, change)
                 accepted += 1
                 if change.queue_id is not None:
                     accepted_queue_ids.append(change.queue_id)
+                accepted_items.append(
+                    SyncAcceptedItem(
+                        queue_id=change.queue_id,
+                        entity_type=change.entity_type,
+                        entity_id=accepted_entity_id,
+                        sync_version=accepted_version,
+                    )
+                )
             except AppException as exc:
                 if exc.code == 4302:
                     conflict_count += 1
@@ -68,6 +79,7 @@ class SyncService:
             conflict_count=conflict_count,
             latest_change_id=latest_change_id,
             accepted_queue_ids=accepted_queue_ids,
+            accepted_items=accepted_items,
             rejected_items=rejected_items,
         )
 
@@ -130,14 +142,23 @@ class SyncService:
             latest_change_id=self._latest_change_id(user),
         )
 
-    def _apply_change(self, user: User, device_id: str, change: SyncPushChange) -> None:
+    def _apply_change(self, user: User, device_id: str, change: SyncPushChange) -> tuple[str, int]:
         payload = sanitize_payload(change.payload or {})
         entity_id = self._resolve_entity_id(change.entity_id, payload)
         record = self._get_record(user, change.entity_type, entity_id)
 
         operation = "delete" if change.operation == SyncOperation.delete else "upsert"
-        if change.base_version and record is not None and int(record.version) > int(change.base_version):
+        is_status_patch = self._is_daily_task_status_patch(change, payload)
+        if (
+            not is_status_patch
+            and change.base_version
+            and record is not None
+            and int(record.version) > int(change.base_version)
+        ):
             raise AppException("云端版本已更新，请先拉取后再同步", code=4302, status_code=409)
+
+        if is_status_patch and record is not None:
+            return self._apply_daily_task_status_patch(user, device_id, change, payload, record)
 
         next_version = int(record.version) + 1 if record is not None else max(int(payload.get("sync_version") or 1), 1)
         if operation == "delete":
@@ -183,6 +204,90 @@ class SyncService:
                 changed_by_device_id=device_id,
             )
         )
+        return entity_id, next_version
+
+    def _is_daily_task_status_patch(self, change: SyncPushChange, payload: dict[str, Any]) -> bool:
+        if change.entity_type != "daily_task" or change.operation == SyncOperation.delete:
+            return False
+        scope = payload.get("sync_scope")
+        changed_fields = payload.get("changed_fields")
+        if scope != "daily_task_status" or not isinstance(changed_fields, list):
+            return False
+        allowed = {"status", "completed_at", "actual_duration_minutes"}
+        return set(str(item) for item in changed_fields).issubset(allowed)
+
+    def _apply_daily_task_status_patch(
+        self,
+        user: User,
+        device_id: str,
+        change: SyncPushChange,
+        payload: dict[str, Any],
+        record: SyncRecord,
+    ) -> tuple[str, int]:
+        remote_payload = loads_json(record.payload_json) or {}
+        remote_data = self._payload_data(remote_payload)
+        incoming_data = self._payload_data(payload)
+        remote_updated = self._parse_updated_at(remote_data.get("updated_at") or remote_payload.get("updated_at"))
+        incoming_updated = self._parse_updated_at(incoming_data.get("updated_at") or payload.get("updated_at"))
+        next_version = int(record.version) + 1
+
+        if incoming_updated is None or remote_updated is None or incoming_updated >= remote_updated:
+            for field in ("status", "completed_at", "actual_duration_minutes"):
+                if field in incoming_data:
+                    remote_data[field] = incoming_data[field]
+            remote_data["updated_at"] = incoming_data.get("updated_at") or remote_data.get("updated_at")
+            remote_payload["data"] = remote_data
+
+        remote_payload["entity_type"] = "daily_task"
+        remote_payload["sync_id"] = record.entity_id
+        remote_payload["sync_version"] = next_version
+        remote_payload["sync_deleted"] = False
+        remote_payload["sync_scope"] = "daily_task_status"
+        remote_payload["changed_fields"] = ["status", "completed_at", "actual_duration_minutes"]
+        remote_payload = sanitize_payload(remote_payload)
+        record.payload_json = dumps_json(remote_payload)
+        record.content_hash = content_hash(remote_payload)
+        record.version = next_version
+        record.deleted_at = None
+        record.updated_by_device_id = device_id
+
+        self.db.add(
+            SyncChange(
+                user_id=int(user.id),
+                entity_type=change.entity_type,
+                entity_id=record.entity_id,
+                operation="upsert",
+                version=next_version,
+                changed_by_device_id=device_id,
+            )
+        )
+        return record.entity_id, next_version
+
+    def _payload_data(self, payload: dict[str, Any]) -> dict[str, Any]:
+        nested = payload.get("data")
+        if isinstance(nested, dict):
+            return dict(nested)
+        return payload
+
+    def _parse_updated_at(self, value: Any) -> datetime | None:
+        if not isinstance(value, str) or not value.strip():
+            return None
+        text = value.strip().replace("Z", "+00:00")
+        try:
+            return self._to_naive_utc(datetime.fromisoformat(text))
+        except ValueError:
+            pass
+        for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
+            try:
+                return datetime.strptime(text[:19], fmt)
+            except ValueError:
+                continue
+        return None
+
+    def _to_naive_utc(self, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            return value
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
 
     def _resolve_entity_id(self, fallback_entity_id: str, payload: dict[str, Any]) -> str:
         sync_id = payload.get("sync_id")

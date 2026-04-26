@@ -35,6 +35,13 @@ class SyncPushRequest(BaseSchema):
     changes: list[SyncPushChange] = Field(default_factory=list, max_length=1000)
 
 
+class SyncAcceptedItem(BaseSchema):
+    queue_id: int | None = None
+    entity_type: str
+    entity_id: str
+    sync_version: int
+
+
 class SyncPushResult(BaseSchema):
     pushed_count: int = 0
     accepted_count: int = 0
@@ -42,6 +49,7 @@ class SyncPushResult(BaseSchema):
     conflict_count: int = 0
     latest_change_id: int = 0
     accepted_queue_ids: list[int] = Field(default_factory=list)
+    accepted_items: list[SyncAcceptedItem] = Field(default_factory=list)
     rejected_items: list["SyncRejectedItem"] = Field(default_factory=list)
 
 

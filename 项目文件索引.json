@@ -3,19 +3,21 @@
   "path": "D:/apps/schedule_sync_server",
   "deploy_path": "/opt/apps/schedule-sync",
   "domain": "https://schedule-sync.zenithy.art",
+  "admin_url": "https://schedule-sync.zenithy.art/admin",
   "gateway": "/opt/apps/hiremate/Caddyfile",
   "caddy_container": "hiremate-caddy",
   "docker_network": "shared_gateway",
   "postgres_user": "autsky",
   "database_url_user": "autsky",
-  "updated_on": "2026-04-25",
+  "updated_on": "2026-04-26",
   "stack": [
     "FastAPI",
     "SQLAlchemy 2.x",
     "Pydantic v2",
     "PostgreSQL",
     "Docker Compose",
-    "Alembic"
+    "Alembic",
+    "Native HTML/CSS/JS Admin Panel"
   ],
   "read_before_modify": [
     "任务记忆文档.md",
@@ -32,7 +34,8 @@
     "app/api/health.py",
     "app/api/auth.py",
     "app/api/devices.py",
-    "app/api/sync.py"
+    "app/api/sync.py",
+    "app/api/admin.py"
   ],
   "core_files": [
     "app/core/config.py",
@@ -43,7 +46,25 @@
   "service_files": [
     "app/services/auth_service.py",
     "app/services/device_service.py",
-    "app/services/sync_service.py"
+    "app/services/sync_service.py",
+    "app/services/admin_service.py"
+  ],
+  "sync_extensions": [
+    "accepted_items",
+    "sync_scope=daily_task_status",
+    "changed_fields",
+    "daily_task status last-write-wins by updated_at"
+  ],
+  "schema_files": [
+    "app/schemas/auth.py",
+    "app/schemas/device.py",
+    "app/schemas/sync.py",
+    "app/schemas/admin.py"
+  ],
+  "admin_static_files": [
+    "app/admin_static/index.html",
+    "app/admin_static/admin.css",
+    "app/admin_static/admin.js"
   ],
   "deploy_files": [
     "Dockerfile",
@@ -56,9 +77,16 @@
     "deploy/smoke-test.sh",
     "deploy/caddy.schedule-sync.example"
   ],
+  "admin_env": {
+    "ADMIN_EMAIL": "autsky6666@gmail.com",
+    "ADMIN_PASSWORD_HASH": "required_in_production",
+    "ADMIN_PASSWORD": "local_development_only",
+    "ADMIN_TOKEN_EXPIRE_MINUTES": 30
+  },
   "verification": {
     "pytest": "python -m pytest -q",
     "import": "python -c \"from app.main import app; print(app.title)\"",
-    "smoke": "bash deploy/smoke-test.sh http://127.0.0.1:18130"
+    "smoke": "bash deploy/smoke-test.sh http://127.0.0.1:18130",
+    "admin": "open https://schedule-sync.zenithy.art/admin after deploy"
   }
 }

@@ -43,6 +43,8 @@ require_not_placeholder SCHEDULE_SYNC_DOMAIN
 require_not_placeholder POSTGRES_PASSWORD
 require_not_placeholder DATABASE_URL
 require_not_placeholder JWT_SECRET
+require_not_placeholder ADMIN_EMAIL
+require_not_placeholder ADMIN_PASSWORD_HASH
 
 EXPECTED_POSTGRES_USER="autsky"
 LEGACY_POSTGRES_USER="autsky6666@gmail.com"

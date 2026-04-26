@@ -65,6 +65,20 @@ def create_access_token(*, user_id: int, email: str) -> tuple[str, int]:
     return jwt.encode(payload, settings.jwt_secret, algorithm="HS256"), int(expires_delta.total_seconds())
 
 
+def create_admin_access_token(*, email: str) -> tuple[str, int]:
+    settings = get_settings()
+    expires_delta = timedelta(minutes=settings.admin_token_expire_minutes)
+    expires_at = utc_now() + expires_delta
+    payload: dict[str, Any] = {
+        "sub": "admin",
+        "email": email,
+        "type": "admin",
+        "exp": expires_at,
+        "iat": utc_now(),
+    }
+    return jwt.encode(payload, settings.jwt_secret, algorithm="HS256"), int(expires_delta.total_seconds())
+
+
 def decode_access_token(token: str) -> dict[str, Any]:
     settings = get_settings()
     try:
@@ -73,6 +87,17 @@ def decode_access_token(token: str) -> dict[str, Any]:
         raise AppException("登录状态已失效，请重新登录", code=4010, status_code=401) from exc
     if payload.get("type") != "access":
         raise AppException("Token 类型不正确", code=4011, status_code=401)
+    return payload
+
+
+def decode_admin_access_token(token: str) -> dict[str, Any]:
+    settings = get_settings()
+    try:
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+    except jwt.PyJWTError as exc:
+        raise AppException("Admin token has expired or is invalid", code=4410, status_code=401) from exc
+    if payload.get("type") != "admin":
+        raise AppException("Admin token type is invalid", code=4411, status_code=403)
     return payload
 
 

@@ -40,10 +40,20 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = Field(default=30, alias="REFRESH_TOKEN_EXPIRE_DAYS")
     auth_rate_limit_max_attempts: int = Field(default=20, alias="AUTH_RATE_LIMIT_MAX_ATTEMPTS")
     auth_rate_limit_window_seconds: int = Field(default=300, alias="AUTH_RATE_LIMIT_WINDOW_SECONDS")
+    admin_email: str = Field(default="autsky6666@gmail.com", alias="ADMIN_EMAIL")
+    admin_password_hash: str = Field(default="", alias="ADMIN_PASSWORD_HASH")
+    admin_password: str = Field(default="", alias="ADMIN_PASSWORD")
+    admin_token_expire_minutes: int = Field(default=30, alias="ADMIN_TOKEN_EXPIRE_MINUTES")
 
     schedule_sync_domain: str = Field(default="sync.example.com", alias="SCHEDULE_SYNC_DOMAIN")
     uvicorn_workers: int = Field(default=1, alias="UVICORN_WORKERS")
     allowed_origins: str = Field(default=DEFAULT_ALLOWED_ORIGINS, alias="ALLOWED_ORIGINS")
+    mobile_latest_version: str = Field(default="0.1.0", alias="MOBILE_LATEST_VERSION")
+    mobile_min_supported_version: str = Field(default="0.1.0", alias="MOBILE_MIN_SUPPORTED_VERSION")
+    mobile_update_required: bool = Field(default=False, alias="MOBILE_UPDATE_REQUIRED")
+    mobile_release_notes: str = Field(default="日程安排手机端持续优化中。", alias="MOBILE_RELEASE_NOTES")
+    mobile_testflight_url: str = Field(default="", alias="MOBILE_TESTFLIGHT_URL")
+    mobile_app_store_url: str = Field(default="", alias="MOBILE_APP_STORE_URL")
 
     @field_validator("app_base_url")
     @classmethod
@@ -85,6 +95,17 @@ class Settings(BaseSettings):
             errors.append("ACCESS_TOKEN_EXPIRE_MINUTES 必须大于 0")
         if self.refresh_token_expire_days <= 0:
             errors.append("REFRESH_TOKEN_EXPIRE_DAYS 必须大于 0")
+
+        if not self.admin_email.strip():
+            errors.append("ADMIN_EMAIL must not be empty")
+        if self.admin_token_expire_minutes <= 0:
+            errors.append("ADMIN_TOKEN_EXPIRE_MINUTES must be greater than 0")
+        if not self.admin_password_hash.strip():
+            errors.append("ADMIN_PASSWORD_HASH must be configured in production")
+        if self.admin_password.strip():
+            errors.append("ADMIN_PASSWORD is only allowed in local development; use ADMIN_PASSWORD_HASH in production")
+        if self.admin_password_hash.startswith("replace-with"):
+            errors.append("ADMIN_PASSWORD_HASH is still a placeholder")
 
         if errors:
             raise SettingsError("生产配置不安全：" + "；".join(errors))

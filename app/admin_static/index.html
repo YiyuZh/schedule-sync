@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>日程安排云同步后台</title>
+    <link rel="stylesheet" href="/admin/admin.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section id="loginView" class="login-panel">
+        <div class="brand-block">
+          <p class="eyebrow">Schedule Sync Admin</p>
+          <h1>日程安排云同步后台</h1>
+          <p>查看用户、设备、同步数据与每日活跃情况。管理员密码只应配置在服务器环境变量中。</p>
+        </div>
+
+        <form id="loginForm" class="card auth-card">
+          <label>
+            管理员邮箱
+            <input id="loginEmail" type="email" autocomplete="username" value="autsky6666@gmail.com" required />
+          </label>
+          <label>
+            管理员密码
+            <input id="loginPassword" type="password" autocomplete="current-password" required />
+          </label>
+          <button class="primary-button" type="submit">登录后台</button>
+          <p id="loginError" class="error-text"></p>
+        </form>
+      </section>
+
+      <section id="dashboardView" class="dashboard hidden">
+        <aside class="sidebar">
+          <div>
+            <p class="eyebrow">Schedule Sync</p>
+            <h2>管理员面板</h2>
+          </div>
+          <nav>
+            <a href="#overview" class="active">概览</a>
+            <a href="#users">用户</a>
+          </nav>
+          <button id="logoutButton" class="ghost-button" type="button">退出登录</button>
+        </aside>
+
+        <section class="content">
+          <header class="topbar">
+            <div>
+              <p class="eyebrow">https://schedule-sync.zenithy.art/admin</p>
+              <h1>云同步运行概览</h1>
+            </div>
+            <button id="refreshButton" class="secondary-button" type="button">刷新数据</button>
+          </header>
+
+          <section id="overview" class="metrics-grid">
+            <article class="metric-card">
+              <span>总用户数</span>
+              <strong id="metricUsers">-</strong>
+            </article>
+            <article class="metric-card">
+              <span>近 30 日活跃</span>
+              <strong id="metricActive30">-</strong>
+            </article>
+            <article class="metric-card">
+              <span>设备数</span>
+              <strong id="metricDevices">-</strong>
+            </article>
+            <article class="metric-card">
+              <span>同步记录数</span>
+              <strong id="metricRecords">-</strong>
+            </article>
+            <article class="metric-card">
+              <span>今日活跃</span>
+              <strong id="metricToday">-</strong>
+            </article>
+          </section>
+
+          <section class="card chart-card">
+            <div class="section-title">
+              <div>
+                <h2>每日活跃量</h2>
+                <p>按同步变更、登录和设备活跃推算近 30 日活跃用户。</p>
+              </div>
+            </div>
+            <svg id="activeChart" viewBox="0 0 900 260" role="img" aria-label="近 30 日活跃量图表"></svg>
+          </section>
+
+          <section id="users" class="card users-card">
+            <div class="section-title">
+              <div>
+                <h2>用户列表</h2>
+                <p>点击查看详情；删除用户会清空该用户全部云同步数据。</p>
+              </div>
+              <form id="searchForm" class="search-form">
+                <input id="searchInput" placeholder="搜索邮箱或昵称" />
+                <button class="secondary-button" type="submit">搜索</button>
+              </form>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>邮箱</th>
+                    <th>昵称</th>
+                    <th>状态</th>
+                    <th>设备</th>
+                    <th>同步记录</th>
+                    <th>最后活跃</th>
+                    <th>注册时间</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="usersTable"></tbody>
+              </table>
+            </div>
+            <div class="pager">
+              <button id="prevPage" class="ghost-button" type="button">上一页</button>
+              <span id="pageInfo">-</span>
+              <button id="nextPage" class="ghost-button" type="button">下一页</button>
+            </div>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <aside id="detailDrawer" class="drawer hidden">
+      <div class="drawer-head">
+        <div>
+          <p class="eyebrow">用户详情</p>
+          <h2 id="detailEmail">-</h2>
+        </div>
+        <button id="closeDetail" class="icon-button" type="button">×</button>
+      </div>
+      <div id="detailBody" class="drawer-body"></div>
+    </aside>
+
+    <div id="deleteModal" class="modal hidden">
+      <form id="deleteForm" class="modal-card">
+        <h2>确认删除用户</h2>
+        <p>该操作会清空该用户所有云同步数据，包括设备、Token、设置、同步记录和变更日志。</p>
+        <p>请输入用户邮箱 <strong id="deleteEmailText"></strong> 以确认删除。</p>
+        <input id="deleteEmailInput" placeholder="输入完整邮箱" required />
+        <div class="modal-actions">
+          <button id="cancelDelete" class="ghost-button" type="button">取消</button>
+          <button class="danger-button" type="submit">确认删除</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+    <script src="/admin/admin.js"></script>
+  </body>
+</html>

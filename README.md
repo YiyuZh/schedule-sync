@@ -1,5 +1,4 @@
 # 日程安排云同步服务
-
 这是“日程安排”的独立云同步服务端，负责账号、设备、Token、同步快照和变更日志。
 
 云端不保存 AI Key，不代理 AI 请求，不承载本地业务逻辑。
@@ -259,3 +258,62 @@ bash deploy/backup-postgres.sh
 - `任务记忆文档.md`：当前状态、关键决策、维护边界。
 - `项目文件索引.md`：人类可读文件索引。
 - `项目文件索引.json`：机器可读文件索引。
+## 管理员可视化后台
+
+后台入口：
+
+```text
+https://schedule-sync.zenithy.art/admin
+```
+
+后台能力：
+- 查看总用户数、近 30 日活跃、设备数、同步记录数和今日活跃。
+- 查看用户列表，支持按邮箱或昵称搜索。
+- 查看单个用户的设备列表和同步实体类型分布。
+- 删除普通用户，并清理该用户的设备、Token、用户设置、同步记录和同步变更。
+- 禁止删除 `ADMIN_EMAIL` 对应的管理员账号。
+
+服务端 `.env` 需要配置：
+
+```env
+ADMIN_EMAIL=autsky6666@gmail.com
+ADMIN_PASSWORD_HASH=<管理员密码哈希>
+ADMIN_TOKEN_EXPIRE_MINUTES=30
+```
+
+不要把明文管理员密码提交到 Git。首次部署时在服务器执行下面命令生成哈希，然后把输出写入 `.env` 的 `ADMIN_PASSWORD_HASH`：
+
+```bash
+cd /opt/apps/schedule-sync
+python - <<'PY'
+from app.core.security import hash_password
+print(hash_password("Aut123456"))
+PY
+```
+
+本地开发临时调试可以使用：
+
+```env
+ADMIN_EMAIL=autsky6666@gmail.com
+ADMIN_PASSWORD=Aut123456
+```
+
+生产环境会拒绝 `ADMIN_PASSWORD`，必须使用 `ADMIN_PASSWORD_HASH`。
+
+管理员 API：
+- `POST /api/admin/login`
+- `GET /api/admin/me`
+- `GET /api/admin/overview`
+- `GET /api/admin/users`
+- `GET /api/admin/users/{user_id}`
+- `DELETE /api/admin/users/{user_id}`
+
+部署更新：
+
+```bash
+cd /opt/apps/schedule-sync
+bash deploy/update-server.sh
+curl https://schedule-sync.zenithy.art/api/health
+```
+
+Caddy 不需要新增站点，继续使用现有 `schedule-sync.zenithy.art -> schedule-sync-api:8000` 反代。
